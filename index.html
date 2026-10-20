@@ -142,6 +142,7 @@ button:disabled { opacity: .5; cursor: default; }
         <div><label for="o-height">الارتفاع (px)</label><input id="o-height" type="number" min="16" max="8000"></div>
         <div><label for="o-mode">طريقة الملاءمة</label>
           <select id="o-mode">
+            <option value="keep">بدون تغيير المقاس (ضغط فقط)</option>
             <option value="fit">احتواء دون قص (الأطول يطابق الحد)</option>
             <option value="pad">مربع/مستطيل ثابت بخلفية</option>
             <option value="cover">ملء الإطار بقص الزائد</option>
@@ -183,7 +184,8 @@ button:disabled { opacity: .5; cursor: default; }
    كل نوع يظهر في القائمة المنسدلة للموظف.
 
    width / height : المقاس بالبكسل
-   mode  : fit   = احتواء دون قص (الأطول يطابق الحد، ولا تُكبَّر الصور الصغيرة)
+   mode  : keep  = نفس مقاس الصورة الأصلي تمامًا (ضغط فقط؛ width وheight تُتجاهل)
+           fit   = احتواء دون قص (الأطول يطابق الحد، ولا تُكبَّر الصور الصغيرة)
            pad   = إطار ثابت بالمقاس، والصورة في الوسط على لون الخلفية
            cover = ملء الإطار كاملًا مع قص الزائد
    format: image/webp | image/jpeg | image/png
@@ -194,13 +196,9 @@ button:disabled { opacity: .5; cursor: default; }
    suffix: لاحقة تُضاف لاسم الملف (اختياري)
    ============================================================ */
 const PRESETS = [
-  // المعتمد لصور المنتجات: 1200×1200 مربعة، JPG جودة 75–80، أقل من 200KB (المثالي 100–150KB)
-  { id: 'product', name: 'صورة منتج (مربعة)', width: 1200, height: 1200, mode: 'pad',
+  // المعتمد لصور المنتجات: نفس مقاس الصورة الأصلي دون أي تغيير، JPG جودة 75–80، أقل من 200KB
+  { id: 'product', name: 'صورة منتج', width: 1200, height: 1200, mode: 'keep',
     format: 'image/jpeg', quality: 80, maxKB: 200, minQuality: 70, background: '#ffffff', suffix: '' },
-  { id: 'gallery', name: 'صورة معرض / تفاصيل', width: 1600, height: 1600, mode: 'fit',
-    format: 'image/webp', quality: 82, maxKB: 300, minQuality: 60, background: '#ffffff', suffix: '' },
-  { id: 'banner', name: 'بنر رئيسي', width: 1920, height: 700, mode: 'cover',
-    format: 'image/webp', quality: 80, maxKB: 250, minQuality: 55, background: '#ffffff', suffix: '' },
 ];
 
 /* ---------- الحالة ---------- */
@@ -210,7 +208,7 @@ let current = null; // نسخة قابلة للتعديل من النوع الم
 
 const EXT = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
 const FMT_LABEL = { 'image/webp': 'WebP', 'image/jpeg': 'JPEG', 'image/png': 'PNG' };
-const MODE_LABEL = { fit: 'احتواء دون قص', pad: 'إطار ثابت بخلفية', cover: 'ملء الإطار بقص' };
+const MODE_LABEL = { keep: 'بنفس مقاس الصورة الأصلي', fit: 'احتواء دون قص', pad: 'إطار ثابت بخلفية', cover: 'ملء الإطار بقص' };
 
 /* ---------- واجهة الإعدادات ---------- */
 function initPresets() {
@@ -253,10 +251,11 @@ function readOverrides() {
 
 function renderSpec() {
   const p = current;
-  const size = p.mode === 'fit' ? `حتى ${p.width}×${p.height}` : `${p.width}×${p.height}`;
+  $('o-width').disabled = $('o-height').disabled = p.mode === 'keep'; // المقاس لا يُستخدم مع «بدون تغيير»
+  const size = p.mode === 'keep' ? '' : p.mode === 'fit' ? `حتى ${p.width}×${p.height}` : `${p.width}×${p.height}`;
   const lim = p.maxKB ? ` · حتى ${p.maxKB}KB` : '';
   const q = p.format === 'image/png' ? '' : ` · جودة ${p.quality}`;
-  $('spec').innerHTML = `${ltr(size + ' px')} · ${MODE_LABEL[p.mode]} · ${FMT_LABEL[p.format]}${q ? ' · جودة ' + ltr(p.quality) : ''}${p.maxKB ? ' · حتى ' + ltr(p.maxKB + ' KB') : ''}`;
+  $('spec').innerHTML = `${size ? ltr(size + ' px') + ' · ' : ''}${MODE_LABEL[p.mode]} · ${FMT_LABEL[p.format]}${q ? ' · جودة ' + ltr(p.quality) : ''}${p.maxKB ? ' · حتى ' + ltr(p.maxKB + ' KB') : ''}`;
 }
 
 /* ---------- معالجة الصورة ---------- */
@@ -294,7 +293,7 @@ function layout(sw, sh, p) {
     return { W: p.width, H: p.height, dx: 0, dy: 0, dw: p.width, dh: p.height,
              sx: (sw - cw) / 2, sy: (sh - ch) / 2, sw: cw, sh: ch };
   }
-  const s = Math.min(p.width / sw, p.height / sh, 1); // لا نكبّر الصور الصغيرة
+  const s = p.mode === 'keep' ? 1 : Math.min(p.width / sw, p.height / sh, 1); // لا نكبّر الصور الصغيرة
   const dw = Math.max(1, Math.round(sw * s)), dh = Math.max(1, Math.round(sh * s));
   if (p.mode === 'pad') {
     return { W: p.width, H: p.height, dx: Math.round((p.width - dw) / 2), dy: Math.round((p.height - dh) / 2),
@@ -346,7 +345,7 @@ async function processFile(file, p) {
   let blob = enc.blob, mime = enc.blob.type || p.format, kept = false;
 
   // الأصلية أصغر ومقاسها داخل الحد؟ نبقيها كما هي بدل ما نكبّرها.
-  const untouchedGeometry = p.mode === 'fit' && L.dw === srcW && L.dh === srcH;
+  const untouchedGeometry = (p.mode === 'fit' || p.mode === 'keep') && L.dw === srcW && L.dh === srcH;
   if (untouchedGeometry && file.size <= blob.size) { blob = file; mime = file.type || mime; kept = true; }
 
   const base = file.name.replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]+/g, '-') + (p.suffix || '');
