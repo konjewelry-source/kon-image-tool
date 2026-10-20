@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ضغط صور كن</title>
+<meta name="theme-color" content="#122445">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --navy: #122445;
+  --red: #882530;
+  --gray: #A4A0A0;
+  --bg: #f6f5f3;
+  --card: #ffffff;
+  --text: #1c2233;
+  --muted: #6b6f7b;
+  --line: #e3e1dd;
+  --ok: #1d7a46;
+  --warn: #a35a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1626;
+    --card: #17223a;
+    --text: #eef0f5;
+    --muted: #a3a9b8;
+    --line: #2a3754;
+    --ok: #5dd28f;
+    --warn: #f0b35a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Frutiger LT Arabic", "Segoe UI", Tahoma, sans-serif;
+  line-height: 1.6;
+}
+header {
+  background: var(--navy);
+  color: #fff;
+  padding: 18px 16px;
+  border-bottom: 4px solid var(--red);
+}
+header h1 { margin: 0; font-size: 1.35rem; }
+header p { margin: 2px 0 0; color: #c9cfdd; font-size: .9rem; }
+main { max-width: 860px; margin: 0 auto; padding: 18px 16px 48px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+label.field { display: block; font-weight: 600; margin-bottom: 6px; }
+select, input[type=number], input[type=text], input[type=color] {
+  font: inherit;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+}
+.spec { color: var(--muted); font-size: .92rem; margin-top: 8px; }
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid label { font-size: .85rem; color: var(--muted); display: block; margin-bottom: 4px; }
+.drop {
+  border: 2px dashed var(--gray);
+  border-radius: 14px;
+  padding: 34px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--card);
+  transition: border-color .15s, background .15s;
+}
+.drop.over { border-color: var(--red); background: rgba(136, 37, 48, .06); }
+.drop strong { display: block; font-size: 1.1rem; margin-bottom: 4px; }
+.drop span { color: var(--muted); font-size: .9rem; }
+button {
+  font: inherit;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  cursor: pointer;
+  background: var(--navy);
+  color: #fff;
+}
+button.red { background: var(--red); }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button:disabled { opacity: .5; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.summary { color: var(--muted); font-size: .95rem; }
+.summary b { color: var(--text); }
+.item {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.item:first-child { border-top: 0; }
+.thumb { width: 72px; height: 72px; border-radius: 8px; background: var(--bg) center / contain no-repeat; border: 1px solid var(--line); }
+.name { font-weight: 600; word-break: break-all; }
+.meta { color: var(--muted); font-size: .88rem; }
+.save { color: var(--ok); font-weight: 600; }
+.note { color: var(--warn); font-size: .85rem; }
+.err { color: var(--red); font-size: .9rem; }
+.item a.dl { text-decoration: none; background: var(--navy); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: .9rem; white-space: nowrap; }
+@media (max-width: 520px) {
+  .item { grid-template-columns: 56px 1fr; }
+  .thumb { width: 56px; height: 56px; }
+  .item .act { grid-column: 1 / -1; }
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ضغط صور كن</h1>
+  <p>اختر نوع الصورة، اسحب الصور، ثم حمّلها جاهزة بالمقاس والحجم المعتمدين</p>
+</header>
+
+<main>
+  <section class="card">
+    <label class="field" for="preset">نوع الصورة</label>
+    <select id="preset"></select>
+    <div class="spec" id="spec"></div>
+
+    <details>
+      <summary>إعدادات متقدمة (للمسؤول فقط)</summary>
+      <div class="grid">
+        <div><label for="o-width">العرض (px)</label><input id="o-width" type="number" min="16" max="8000"></div>
+        <div><label for="o-height">الارتفاع (px)</label><input id="o-height" type="number" min="16" max="8000"></div>
+        <div><label for="o-mode">طريقة الملاءمة</label>
+          <select id="o-mode">
+            <option value="fit">احتواء دون قص (الأطول يطابق الحد)</option>
+            <option value="pad">مربع/مستطيل ثابت بخلفية</option>
+            <option value="cover">ملء الإطار بقص الزائد</option>
+          </select></div>
+        <div><label for="o-format">الصيغة</label>
+          <select id="o-format">
+            <option value="image/webp">WebP</option>
+            <option value="image/jpeg">JPEG</option>
+            <option value="image/png">PNG</option>
+          </select></div>
+        <div><label for="o-quality">الجودة (1–100)</label><input id="o-quality" type="number" min="1" max="100"></div>
+        <div><label for="o-maxkb">أقصى حجم (KB، 0 = بلا حد)</label><input id="o-maxkb" type="number" min="0" max="5000"></div>
+        <div><label for="o-bg">لون الخلفية</label><input id="o-bg" type="color"></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="drop" id="drop" tabindex="0" role="button" aria-label="اختيار الصور">
+    <strong>اسحب الصور هنا أو اضغط للاختيار</strong>
+    <span>JPG · PNG · WebP — عدة صور دفعة واحدة. المعالجة تتم داخل جهازك ولا تُرفع الصور لأي مكان.</span>
+    <input id="file" type="file" accept="image/*" multiple class="hidden">
+  </section>
+
+  <section class="card hidden" id="results">
+    <div class="bar">
+      <div class="summary" id="summary"></div>
+      <div>
+        <button class="red" id="zip" disabled>تحميل الكل (ZIP)</button>
+        <button class="ghost" id="clear">مسح القائمة</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   إعدادات الأنواع — هنا تُعدَّل المعطيات المعتمدة للمتجر.
+   كل نوع يظهر في القائمة المنسدلة للموظف.
+
+   width / height : المقاس بالبكسل
+   mode  : fit   = احتواء دون قص (الأطول يطابق الحد، ولا تُكبَّر الصور الصغيرة)
+           pad   = إطار ثابت بالمقاس، والصورة في الوسط على لون الخلفية
+           cover = ملء الإطار كاملًا مع قص الزائد
+   format: image/webp | image/jpeg | image/png
+   quality: 1–100 (الجودة المطلوبة أولًا)
+   maxKB : أقصى حجم للملف؛ إن تجاوزه تنزل الجودة تدريجيًا حتى يدخل (0 = بلا حد)
+   minQuality: أدنى جودة مسموح بالنزول إليها لتحقيق maxKB
+   background: لون الخلفية (للصيغ التي لا تدعم الشفافية، أو لوضع pad)
+   suffix: لاحقة تُضاف لاسم الملف (اختياري)
+   ============================================================ */
+const PRESETS = [
+  // المعتمد لصور المنتجات: 1200×1200 مربعة، JPG جودة 75–80، أقل من 200KB (المثالي 100–150KB)
+  { id: 'product', name: 'صورة منتج (مربعة)', width: 1200, height: 1200, mode: 'pad',
+    format: 'image/jpeg', quality: 80, maxKB: 200, minQuality: 70, background: '#ffffff', suffix: '' },
+  { id: 'gallery', name: 'صورة معرض / تفاصيل', width: 1600, height: 1600, mode: 'fit',
+    format: 'image/webp', quality: 82, maxKB: 300, minQuality: 60, background: '#ffffff', suffix: '' },
+  { id: 'banner', name: 'بنر رئيسي', width: 1920, height: 700, mode: 'cover',
+    format: 'image/webp', quality: 80, maxKB: 250, minQuality: 55, background: '#ffffff', suffix: '' },
+];
+
+/* ---------- الحالة ---------- */
+const $ = (id) => document.getElementById(id);
+const state = { items: [], busy: false };
+let current = null; // نسخة قابلة للتعديل من النوع المختار
+
+const EXT = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
+const FMT_LABEL = { 'image/webp': 'WebP', 'image/jpeg': 'JPEG', 'image/png': 'PNG' };
+const MODE_LABEL = { fit: 'احتواء دون قص', pad: 'إطار ثابت بخلفية', cover: 'ملء الإطار بقص' };
+
+/* ---------- واجهة الإعدادات ---------- */
+function initPresets() {
+  const sel = $('preset');
+  PRESETS.forEach((p, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = p.name;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => selectPreset(+sel.value));
+  selectPreset(0);
+  ['o-width','o-height','o-mode','o-format','o-quality','o-maxkb','o-bg'].forEach((id) =>
+    $(id).addEventListener('input', readOverrides));
+}
+
+function selectPreset(i) {
+  current = { ...PRESETS[i] };
+  $('o-width').value = current.width;
+  $('o-height').value = current.height;
+  $('o-mode').value = current.mode;
+  $('o-format').value = current.format;
+  $('o-quality').value = current.quality;
+  $('o-maxkb').value = current.maxKB;
+  $('o-bg').value = current.background;
+  renderSpec();
+}
+
+function readOverrides() {
+  const n = (id, d) => { const v = parseInt($(id).value, 10); return Number.isFinite(v) ? v : d; };
+  current.width = Math.max(16, n('o-width', current.width));
+  current.height = Math.max(16, n('o-height', current.height));
+  current.mode = $('o-mode').value;
+  current.format = $('o-format').value;
+  current.quality = Math.min(100, Math.max(1, n('o-quality', current.quality)));
+  current.maxKB = Math.max(0, n('o-maxkb', current.maxKB));
+  current.minQuality = Math.min(current.minQuality, current.quality);
+  current.background = $('o-bg').value;
+  renderSpec();
+}
+
+function renderSpec() {
+  const p = current;
+  const size = p.mode === 'fit' ? `حتى ${p.width}×${p.height}` : `${p.width}×${p.height}`;
+  const lim = p.maxKB ? ` · حتى ${p.maxKB}KB` : '';
+  const q = p.format === 'image/png' ? '' : ` · جودة ${p.quality}`;
+  $('spec').innerHTML = `${ltr(size + ' px')} · ${MODE_LABEL[p.mode]} · ${FMT_LABEL[p.format]}${q ? ' · جودة ' + ltr(p.quality) : ''}${p.maxKB ? ' · حتى ' + ltr(p.maxKB + ' KB') : ''}`;
+}
+
+/* ---------- معالجة الصورة ---------- */
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w));
+  c.height = Math.max(1, Math.round(h));
+  return c;
+}
+
+// تصغير بخطوات نصفية: أنعم وأحدّ من تصغير خطوة واحدة كبيرة.
+function scaleCrop(src, sx, sy, sw, sh, dw, dh) {
+  let cur = src, cx = sx, cy = sy, cw = sw, ch = sh;
+  while (cw / 2 >= dw && ch / 2 >= dh) {
+    const nw = Math.max(dw, Math.round(cw / 2));
+    const nh = Math.max(dh, Math.round(ch / 2));
+    const c = makeCanvas(nw, nh);
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(cur, cx, cy, cw, ch, 0, 0, nw, nh);
+    cur = c; cx = 0; cy = 0; cw = nw; ch = nh;
+  }
+  const out = makeCanvas(dw, dh);
+  const g = out.getContext('2d');
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.drawImage(cur, cx, cy, cw, ch, 0, 0, out.width, out.height);
+  return out;
+}
+
+function layout(sw, sh, p) {
+  // يرجع مقاس الإطار النهائي، وموضع الصورة داخله، والجزء المقصوص من المصدر.
+  if (p.mode === 'cover') {
+    const s = Math.max(p.width / sw, p.height / sh);
+    const cw = p.width / s, ch = p.height / s;
+    return { W: p.width, H: p.height, dx: 0, dy: 0, dw: p.width, dh: p.height,
+             sx: (sw - cw) / 2, sy: (sh - ch) / 2, sw: cw, sh: ch };
+  }
+  const s = Math.min(p.width / sw, p.height / sh, 1); // لا نكبّر الصور الصغيرة
+  const dw = Math.max(1, Math.round(sw * s)), dh = Math.max(1, Math.round(sh * s));
+  if (p.mode === 'pad') {
+    return { W: p.width, H: p.height, dx: Math.round((p.width - dw) / 2), dy: Math.round((p.height - dh) / 2),
+             dw, dh, sx: 0, sy: 0, sw, sh };
+  }
+  return { W: dw, H: dh, dx: 0, dy: 0, dw, dh, sx: 0, sy: 0, sw, sh };
+}
+
+function toBlob(canvas, mime, q) {
+  return new Promise((res) => canvas.toBlob(res, mime, q));
+}
+
+async function encode(canvas, p) {
+  const mime = p.format;
+  if (mime === 'image/png') return { blob: await toBlob(canvas, mime), quality: null, overLimit: false };
+  const hi = p.quality / 100;
+  let blob = await toBlob(canvas, mime, hi);
+  const limit = p.maxKB * 1024;
+  if (!limit || blob.size <= limit) return { blob, quality: p.quality, overLimit: false };
+  const lo = Math.min(p.minQuality, p.quality) / 100;
+  let low = await toBlob(canvas, mime, lo);
+  if (low.size > limit) return { blob: low, quality: Math.round(lo * 100), overLimit: true };
+  // بحث ثنائي عن أعلى جودة تدخل تحت الحد
+  let best = low, bestQ = lo, a = lo, b = hi;
+  for (let i = 0; i < 7; i++) {
+    const m = (a + b) / 2;
+    const t = await toBlob(canvas, mime, m);
+    if (t.size <= limit) { best = t; bestQ = m; a = m; } else { b = m; }
+  }
+  return { blob: best, quality: Math.round(bestQ * 100), overLimit: false };
+}
+
+async function processFile(file, p) {
+  const bmp = await createImageBitmap(file); // يحترم اتجاه الصورة المخزّن (EXIF)
+  const L = layout(bmp.width, bmp.height, p);
+  const canvasOut = makeCanvas(L.W, L.H);
+  const g = canvasOut.getContext('2d');
+
+  const keepsAlpha = p.format !== 'image/jpeg';
+  if (p.mode === 'pad' || !keepsAlpha) {
+    g.fillStyle = p.background; g.fillRect(0, 0, canvasOut.width, canvasOut.height);
+  }
+  const piece = scaleCrop(bmp, L.sx, L.sy, L.sw, L.sh, L.dw, L.dh);
+  g.drawImage(piece, L.dx, L.dy);
+  const srcW = bmp.width, srcH = bmp.height;
+  bmp.close && bmp.close();
+
+  const enc = await encode(canvasOut, p);
+  let blob = enc.blob, mime = enc.blob.type || p.format, kept = false;
+
+  // الأصلية أصغر ومقاسها داخل الحد؟ نبقيها كما هي بدل ما نكبّرها.
+  const untouchedGeometry = p.mode === 'fit' && L.dw === srcW && L.dh === srcH;
+  if (untouchedGeometry && file.size <= blob.size) { blob = file; mime = file.type || mime; kept = true; }
+
+  const base = file.name.replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]+/g, '-') + (p.suffix || '');
+  return {
+    name: `${base}.${EXT[mime] || 'jpg'}`,
+    blob, kept,
+    quality: enc.quality, overLimit: enc.overLimit && !kept,
+    inW: srcW, inH: srcH, outW: kept ? srcW : canvasOut.width, outH: kept ? srcH : canvasOut.height,
+    inSize: file.size, outSize: blob.size,
+  };
+}
+
+/* ---------- القائمة ---------- */
+// الأرقام والمقاسات تُعزل اتجاهيًا كي لا ينعكس ترتيبها داخل الجملة العربية
+const ltr = (s) => `<bdi dir="ltr">${s}</bdi>`;
+const fmtSize = (b) => b >= 1048576 ? (b / 1048576).toFixed(2) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+
+async function handleFiles(fileList) {
+  if (state.busy) return;
+  const files = [...fileList].filter((f) => f.type.startsWith('image/'));
+  if (!files.length) { alert('لم يتم اختيار صور مدعومة. الصيغ المدعومة: JPG وPNG وWebP.'); return; }
+  state.busy = true;
+  $('results').classList.remove('hidden');
+  const p = { ...current };
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const entry = { file: f, status: 'work' };
+    state.items.push(entry);
+    render(`جارٍ المعالجة ${i + 1} من ${files.length}…`);
+    try {
+      const r = await processFile(f, p);
+      entry.result = r; entry.url = URL.createObjectURL(r.blob); entry.status = 'done';
+    } catch (e) {
+      entry.status = 'error';
+      entry.error = 'تعذّر قراءة هذه الصورة (قد تكون الصيغة غير مدعومة، مثل HEIC).';
+    }
+  }
+  state.busy = false;
+  render();
+}
+
+function render(busyText) {
+  const list = $('list'); list.textContent = '';
+  let ok = 0, before = 0, after = 0;
+  state.items.forEach((it, idx) => {
+    const row = document.createElement('div'); row.className = 'item';
+    const th = document.createElement('div'); th.className = 'thumb';
+    if (it.url) th.style.backgroundImage = `url("${it.url}")`;
+    const info = document.createElement('div');
+    const nm = document.createElement('div'); nm.className = 'name';
+    nm.textContent = it.result ? it.result.name : it.file.name;
+    const meta = document.createElement('div'); meta.className = 'meta';
+    if (it.status === 'work') meta.textContent = 'قيد المعالجة…';
+    else if (it.status === 'error') { meta.className = 'err'; meta.textContent = it.error; }
+    else {
+      const r = it.result; ok++; before += r.inSize; after += r.outSize;
+      const pct = Math.round((1 - r.outSize / r.inSize) * 100);
+      meta.innerHTML = `المقاس: ${ltr(`${r.inW}×${r.inH}`)} إلى ${ltr(`${r.outW}×${r.outH}`)} · الحجم: ${ltr(fmtSize(r.inSize))} إلى ${ltr(fmtSize(r.outSize))} `;
+      if (pct > 0) { const s = document.createElement('span'); s.className = 'save'; s.innerHTML = `(توفير ${ltr(pct + '%')})`; meta.appendChild(s); }
+    }
+    info.append(nm, meta);
+    if (it.result && it.result.kept) {
+      const n = document.createElement('div'); n.className = 'note';
+      n.textContent = 'الصورة الأصلية أصغر من الناتج ومقاسها ضمن الحد، فأُبقيت كما هي.'; info.appendChild(n);
+    }
+    if (it.result && it.result.overLimit) {
+      const n = document.createElement('div'); n.className = 'note';
+      n.textContent = 'تجاوزت الحد المطلوب حتى بأدنى جودة مسموحة — راجع المسؤول إن لزم.'; info.appendChild(n);
+    }
+    const act = document.createElement('div'); act.className = 'act';
+    if (it.url) {
+      const a = document.createElement('a'); a.className = 'dl'; a.href = it.url; a.download = it.result.name; a.textContent = 'تحميل';
+      act.appendChild(a);
+    }
+    row.append(th, info, act); list.appendChild(row);
+  });
+  const saved = before ? Math.round((1 - after / before) * 100) : 0;
+  $('summary').innerHTML = busyText ? busyText
+    : ok ? `<b>${ok}</b> صورة · من <b>${ltr(fmtSize(before))}</b> إلى <b>${ltr(fmtSize(after))}</b> · توفير <b>${ltr(saved + '%')}</b>` : '';
+  $('zip').disabled = state.busy || ok === 0;
+}
+
+function clearAll() {
+  if (state.busy) return;
+  state.items.forEach((it) => it.url && URL.revokeObjectURL(it.url));
+  state.items = [];
+  $('results').classList.add('hidden');
+  $('file').value = '';
+}
+
+/* ---------- ZIP (بدون ضغط إضافي؛ الصور مضغوطة أصلًا) ---------- */
+const CRC_T = (() => { const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+
+async function buildZip(entries) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  let offset = 0;
+  const d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const e of entries) {
+    const data = new Uint8Array(await e.blob.arrayBuffer());
+    const name = enc.encode(e.name), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+    lh.setUint16(8, 0, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(lh.buffer, name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+    central.push(ch.buffer, name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((s, x) => s + (x.byteLength ?? x.length), 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+}
+
+async function downloadZip() {
+  const used = new Set(), entries = [];
+  state.items.filter((i) => i.result).forEach((i) => {
+    let name = i.result.name, n = 2;
+    while (used.has(name.toLowerCase())) name = i.result.name.replace(/(\.[^.]+)$/, `-${n++}$1`);
+    used.add(name.toLowerCase()); entries.push({ name, blob: i.result.blob });
+  });
+  const blob = await buildZip(entries);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'صور-كن.zip';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/* ---------- ربط الأحداث ---------- */
+const drop = $('drop'), input = $('file');
+drop.addEventListener('click', () => input.click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+input.addEventListener('change', () => { handleFiles(input.files); input.value = ''; });
+['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+$('zip').addEventListener('click', downloadZip);
+$('clear').addEventListener('click', clearAll);
+initPresets();
+
+// يجعل الصفحة قابلة للتثبيت كتطبيق وتعمل دون إنترنت (يُتجاهل عند الفتح كملف محلي)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
