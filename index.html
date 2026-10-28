@@ -196,8 +196,8 @@ button:disabled { opacity: .5; cursor: default; }
    suffix: لاحقة تُضاف لاسم الملف (اختياري)
    ============================================================ */
 const PRESETS = [
-  // المعتمد لصور المنتجات: نفس مقاس الصورة الأصلي دون أي تغيير، JPG جودة 75–80، أقل من 200KB
-  { id: 'product', name: 'صورة منتج', width: 1200, height: 1200, mode: 'keep',
+  // المعتمد لصور المنتجات: الضلع الأطول 1600 بكسل بنفس النسبة دون قص أو إطار، JPG جودة 75–80، أقل من 200KB
+  { id: 'product', name: 'صورة منتج', width: 1600, height: 1600, mode: 'fit',
     format: 'image/jpeg', quality: 80, maxKB: 200, minQuality: 70, background: '#ffffff', suffix: '' },
 ];
 
